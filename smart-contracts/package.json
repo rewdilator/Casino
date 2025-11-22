@@ -4,17 +4,18 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy": "npx hardhat run scripts/deploy.js --network mumbai",
-    "verify": "npx hardhat run scripts/verify.js --network mumbai"
+    "deploy": "npx hardhat run scripts/deploy.js --network amoy",
+    "deploy-all": "npx hardhat run scripts/deploy-all-games.js --network amoy",
+    "verify": "npx hardhat verify --network amoy"
   },
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-waffle": "^2.0.6",
-    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.1.2",
+    "@nomicfoundation/hardhat-verify": "^1.1.0",
     "chai": "^4.3.10",
-    "ethereum-waffle": "^4.0.10",
-    "ethers": "^5.7.2",
-    "hardhat": "^2.19.0"
+    "ethers": "^6.15.0",
+    "hardhat": "^2.19.0",
+    "hardhat-gas-reporter": "^1.0.10"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.3",

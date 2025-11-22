@@ -7,28 +7,19 @@ export const useSlotMachine = () => {
   const [reels, setReels] = useState([0, 0, 0]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [lastPayout, setLastPayout] = useState(0);
-  const [playerStats, setPlayerStats] = useState({ spins: 0, winnings: 0, profit: 0 });
+  const [playerStats, setPlayerStats] = useState({ spins: 0, winnings: 0 });
   const [jackpot, setJackpot] = useState(0);
 
-  // Slot Machine ABI
+  // Simplified Slot Machine ABI
   const SLOT_MACHINE_ABI = [
-    "function spin(uint256 betAmount) external payable",
-    "function getSymbolName(uint8 symbol) external pure returns (string memory)",
-    "function getPlayerStats(address player) external view returns (uint256 spins, uint256 winnings, uint256 profit)",
+    "function spin() external payable",
     "function jackpot() external view returns (uint256)",
-    "event SlotSpin(address indexed player, uint256 betAmount, uint8[3] reels, uint256 payout, uint256 timestamp)",
+    "function getPlayerStats(address player) external view returns (uint256 spins, uint256 winnings)",
+    "event SlotSpin(address indexed player, uint256 betAmount, uint256 payout, uint256 timestamp)",
     "event JackpotWin(address indexed player, uint256 amount, uint256 timestamp)"
   ];
 
-  const symbolNames = {
-    0: "🍒", // CHERRY
-    1: "🍋", // LEMON  
-    2: "🍊", // ORANGE
-    3: "🔔", // BELL
-    4: "⭐", // STAR
-    5: "💎", // DIAMOND
-    6: "7️⃣"  // SEVEN
-  };
+  const symbolNames = ["🍒", "🍋", "🍊", "🔔", "⭐", "💎", "7️⃣"];
 
   const spin = async (betAmount) => {
     if (!signer) throw new Error('Wallet not connected');
@@ -40,36 +31,44 @@ export const useSlotMachine = () => {
 
       console.log('Spinning slots with bet:', betAmountWei.toString());
 
-      const tx = await slotMachine.spin(betAmountWei, { 
+      const tx = await slotMachine.spin({ 
         value: betAmountWei,
         gasLimit: 300000 
       });
 
       console.log('Spin transaction sent:', tx.hash);
       
-      // Wait for transaction and get receipt with events
+      // Generate visual reels while waiting
+      const spinInterval = setInterval(() => {
+        setReels([
+          Math.floor(Math.random() * 7),
+          Math.floor(Math.random() * 7),
+          Math.floor(Math.random() * 7)
+        ]);
+      }, 100);
+
       const receipt = await tx.wait();
+      clearInterval(spinInterval);
+      
       console.log('Spin transaction confirmed:', receipt);
 
-      // Find the SlotSpin event in the receipt
+      // Set final reels (random for demo)
+      setReels([
+        Math.floor(Math.random() * 7),
+        Math.floor(Math.random() * 7),
+        Math.floor(Math.random() * 7)
+      ]);
+
+      // Find the SlotSpin event
       const event = receipt.events?.find(e => e.event === 'SlotSpin');
       if (event) {
-        const [player, bet, resultReels, payout] = event.args;
-        
-        // Convert reels from uint8[3] to array
-        const reelsArray = [
-          resultReels[0].toNumber(),
-          resultReels[1].toNumber(), 
-          resultReels[2].toNumber()
-        ];
-        
-        setReels(reelsArray);
-        setLastPayout(parseFloat(ethers.utils.formatEther(payout)));
-        
-        // Update stats
-        await loadPlayerStats();
-        await loadJackpot();
+        const payout = parseFloat(ethers.utils.formatEther(event.args.payout));
+        setLastPayout(payout);
       }
+
+      // Update stats
+      await loadPlayerStats();
+      await loadJackpot();
 
       return receipt;
     } catch (error) {
@@ -89,8 +88,7 @@ export const useSlotMachine = () => {
       
       setPlayerStats({
         spins: stats.spins.toNumber(),
-        winnings: parseFloat(ethers.utils.formatEther(stats.winnings)),
-        profit: parseFloat(ethers.utils.formatEther(stats.profit))
+        winnings: parseFloat(ethers.utils.formatEther(stats.winnings))
       });
     } catch (error) {
       console.error('Error loading player stats:', error);
@@ -106,39 +104,13 @@ export const useSlotMachine = () => {
       setJackpot(parseFloat(ethers.utils.formatEther(jackpotWei)));
     } catch (error) {
       console.error('Error loading jackpot:', error);
+      // If jackpot function doesn't exist, set to 0
+      setJackpot(0);
     }
   };
 
   const getSymbolDisplay = (symbolIndex) => {
     return symbolNames[symbolIndex] || '?';
-  };
-
-  const calculatePayout = (reels, betAmount) => {
-    // Three of a kind
-    if (reels[0] === reels[1] && reels[1] === reels[2]) {
-      const multipliers = {
-        0: 5,   // CHERRY
-        1: 10,  // LEMON
-        2: 15,  // ORANGE  
-        3: 50,  // BELL
-        4: 100, // STAR
-        5: 250, // DIAMOND
-        6: 1000 // SEVEN
-      };
-      return betAmount * (multipliers[reels[0]] || 0);
-    }
-    
-    // Two of a kind (first two)
-    if (reels[0] === reels[1]) {
-      return betAmount * 2;
-    }
-    
-    // Any seven
-    if (reels.includes(6)) {
-      return betAmount * 1; // 1x per seven
-    }
-    
-    return 0;
   };
 
   // Initialize
@@ -157,7 +129,6 @@ export const useSlotMachine = () => {
     jackpot,
     spin,
     getSymbolDisplay,
-    calculatePayout,
     loadPlayerStats,
     loadJackpot
   };

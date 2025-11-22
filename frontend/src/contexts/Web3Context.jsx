@@ -23,11 +23,11 @@ export const Web3Provider = ({ children }) => {
 
   // Contract addresses (replace with your deployed addresses)
   const CONTRACT_ADDRESSES = {
-    paymentProcessor: "0x66B6C2A7cF1bD7Abec4F5Aa42E9Bd07b99461C9E",
-    pokerGame: "0x85491f3b09B663ECB1a989d67C34c742eb9aCbE5",
-    slotMachine: "YOUR_SLOT_MACHINE_ADDRESS",
-    blackjack: "YOUR_BLACKJACK_ADDRESS",
-    soulboundToken: "0x..."
+    paymentProcessor: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+    pokerGame: "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+    slotMachine: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+    blackjack: "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+    soulboundToken: "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
   };
 
   // Load saved wallet from localStorage on component mount

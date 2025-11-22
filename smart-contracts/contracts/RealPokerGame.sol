@@ -47,6 +47,9 @@ contract RealPokerGame is ReentrancyGuard {
     event GameCompleted(bytes32 indexed gameId, address winner, uint256 prize);
     event CardsDealt(bytes32 indexed gameId, address player, bytes32[] cards);
     
+    // FIX: DECLARE THE MISSING EVENT
+    event WinningsClaimed(address indexed player, uint256 amount);
+    
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
@@ -57,7 +60,8 @@ contract RealPokerGame is ReentrancyGuard {
         _;
     }
 
-    constructor(address _paymentProcessor) {
+    // Constructor already fixed in previous step
+    constructor(address payable _paymentProcessor) {
         paymentProcessor = CasinoPaymentProcessor(_paymentProcessor);
         owner = msg.sender;
     }
@@ -159,16 +163,19 @@ contract RealPokerGame is ReentrancyGuard {
         require(game.state == GameState.ACTIVE, "Game not active");
         require(game.currentPlayer == msg.sender, "Not your turn");
         require(!game.playerInfo[msg.sender].hasFolded, "Player has folded");
-        require(!game.playerInfo[msg.sender].isAllIn, "Player is all-in");
+        require(action == PlayerAction.ALL_IN || !game.playerInfo[msg.sender].isAllIn, "Player is all-in");
 
         Player storage player = game.playerInfo[msg.sender];
         
         if (action == PlayerAction.FOLD) {
             player.hasFolded = true;
         } 
+        else if (action == PlayerAction.CHECK) {
+            require(game.currentBet == 0, "Cannot check when a bet or raise is active");
+        }
         else if (action == PlayerAction.CALL) {
-            require(player.balance >= game.currentBet, "Insufficient balance to call");
             uint256 callAmount = game.currentBet;
+            require(player.balance >= callAmount, "Insufficient balance to call");
             player.balance -= callAmount;
             game.pot += callAmount;
         }
@@ -203,8 +210,10 @@ contract RealPokerGame is ReentrancyGuard {
         // Deal initial cards (simplified - in production use Chainlink VRF)
         for (uint i = 0; i < game.players.length; i++) {
             bytes32[] memory hand = new bytes32[](2);
-            hand[0] = keccak256(abi.encodePacked(block.timestamp, game.players[i], "card1"));
-            hand[1] = keccak256(abi.encodePacked(block.timestamp, game.players[i], "card2"));
+            // NOTE: Use of block.timestamp and address is highly predictable.
+            // For production, use Chainlink VRF or a similar solution for security.
+            hand[0] = keccak256(abi.encodePacked(block.timestamp, block.chainid, game.players[i], "card1"));
+            hand[1] = keccak256(abi.encodePacked(block.timestamp, block.chainid, game.players[i], "card2"));
             game.playerInfo[game.players[i]].hand = hand;
             emit CardsDealt(gameId, game.players[i], hand);
         }
@@ -242,7 +251,13 @@ contract RealPokerGame is ReentrancyGuard {
         require(winnings > 0, "No winnings to claim");
         
         playerWinnings[msg.sender] = 0;
-        payable(msg.sender).transfer(winnings);
+        
+        // Use `call` instead of deprecated `transfer`
+        (bool success, ) = payable(msg.sender).call{value: winnings}("");
+        require(success, "Transfer failed");
+
+        // The formerly undeclared event now compiles
+        emit WinningsClaimed(msg.sender, winnings); 
     }
 
     function _isPlayerInGame(bytes32 gameId, address player) internal view returns (bool) {

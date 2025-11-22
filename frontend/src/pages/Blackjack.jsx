@@ -193,13 +193,18 @@ const Blackjack = () => {
               {/* Player Section */}
               <div className="player-section">
                 <h3>Your Hand ({playerTotal})</h3>
-                <div className="cards-container">
-                  {playerCards.map((card, index) => (
-                    <div key={index} className="playing-card player">
-                      {card}
-                    </div>
-                  ))}
-                </div>
+ 
+<div className="cards-container">
+  {playerCards.map((card, index) => {
+    const [value, suit] = card.split('-');
+    return (
+      <div key={index} className="playing-card player">
+        <div className="card-value">{value}</div>
+        <div className="card-suit">{suit}</div>
+      </div>
+    );
+  })}
+</div>
                 
                 {gameState === 'active' && (
                   <div className="player-actions">

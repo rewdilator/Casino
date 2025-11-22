@@ -3019,3 +3019,50 @@ body {
 .session-item span:last-child {
   font-weight: 600;
 }
+
+/* Card Styles for Text Suits */
+.playing-card {
+  width: 80px;
+  height: 120px;
+  background: white;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: var(--shadow-lg);
+  border: 2px solid var(--border);
+  padding: 0.5rem;
+}
+
+.card-value {
+  font-size: 1.5rem;
+  color: black;
+  margin-bottom: 0.25rem;
+}
+
+.card-suit {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.playing-card.hidden {
+  background: linear-gradient(135deg, #8B5CF6, #6366F1);
+  color: white;
+}
+
+.playing-card.hidden .card-value,
+.playing-card.hidden .card-suit {
+  color: white;
+}
+
+.playing-card.dealer:not(.hidden) {
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+}
+
+.playing-card.player {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  border-color: var(--primary-green);
+} 

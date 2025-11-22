@@ -50,7 +50,8 @@ contract PokerGame is ReentrancyGuard {
         _;
     }
 
-    constructor(address _paymentProcessor) {
+    // FIX: Changed `address` to `address payable` to resolve the TypeError.
+    constructor(address payable _paymentProcessor) {
         paymentProcessor = CasinoPaymentProcessor(_paymentProcessor);
         owner = msg.sender;
     }
@@ -147,7 +148,9 @@ contract PokerGame is ReentrancyGuard {
         playerWinnings[msg.sender] = 0;
         
         // Transfer winnings - in production this would come from escrow
-        payable(msg.sender).transfer(winnings);
+        // Note: Using `transfer` is deprecated. Using `call` is recommended for security.
+        (bool success, ) = payable(msg.sender).call{value: winnings}("");
+        require(success, "Transfer failed");
         
         emit WinningsClaimed(msg.sender, winnings);
     }
@@ -193,20 +196,25 @@ contract PokerGame is ReentrancyGuard {
 
     function getActiveGames() external view returns (bytes32[] memory) {
         // This is a simplified implementation
-        // In production, you'd maintain a separate array of active games
-        bytes32[] memory activeGames = new bytes32[](10); // Max return
+        bytes32[] memory activeGames = new bytes32[](10); 
         uint256 count = 0;
         
-        // Note: This is inefficient for production - use events or separate tracking
+        // Note: This is highly inefficient as it iterates over a fixed/arbitrary range (0-9) 
+        // and is generally a poor pattern for finding active games on-chain.
         for (uint i = 0; i < 10; i++) {
             bytes32 potentialGameId = bytes32(i);
             if (games[potentialGameId].players.length > 0 && 
-                games[potentialGameId].state == GameState.WAITING) {
+                (games[potentialGameId].state == GameState.WAITING || games[potentialGameId].state == GameState.ACTIVE)) {
                 activeGames[count] = potentialGameId;
                 count++;
             }
         }
         
-        return activeGames;
+        // Return only the elements that were actually populated
+        bytes32[] memory result = new bytes32[](count);
+        for(uint i = 0; i < count; i++) {
+            result[i] = activeGames[i];
+        }
+        return result;
     }
 }

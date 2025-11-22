@@ -1,5 +1,7 @@
-require("@nomiclabs/hardhat-waffle");
-require("@nomiclabs/hardhat-etherscan");
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomicfoundation/hardhat-verify");
+require("hardhat-gas-reporter");
 require("dotenv").config();
 
 module.exports = {
@@ -16,26 +18,31 @@ module.exports = {
     amoy: {
       url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 30000000000,
-      chainId: 80002
+      // Let Hardhat auto-estimate gas price - remove fixed gasPrice
+      gas: 5000000, // Reduced from 8M to 5M
+      chainId: 80002,
+      timeout: 120000
     },
     hardhat: {
-      chainId: 1337
-    },
-    localhost: {
-      url: "http://127.0.0.1:8545",
       chainId: 1337
     }
   },
   etherscan: {
     apiKey: {
-      polygonAmoy: process.env.POLYGONSCAN_API_KEY || ""
-    }
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
+    },
+    customChains: [
+      {
+        network: "polygonAmoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com"
+        }
+      }
+    ]
   },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
+  gasReporter: {
+    enabled: false // Disable for now to speed up deployment
   }
 };
