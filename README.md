@@ -1,7 +1,7 @@
 
 # 🎰 Casino — Web3 Gaming Platform
 
-A decentralized casino platform built on Polygon featuring provably fair games, instant payouts, and true digital ownership.
+A decentralized casino platform built on Polygon (Amoy TestNet) featuring provably fair games, instant payouts, and true digital ownership.
 
 ## 🚀 Features
 
