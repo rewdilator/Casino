@@ -19,7 +19,6 @@ contract SlotMachine is ReentrancyGuard {
     
     // Payout multipliers (in basis points, 10000 = 1x)
     mapping(uint8 => uint256) public symbolPayouts;
-    mapping(uint256 => uint256) public linePayouts;
     
     // Game statistics
     mapping(address => uint256) public playerSpins;
@@ -107,7 +106,7 @@ contract SlotMachine is ReentrancyGuard {
         uint8[3] memory reels;
         bytes32 randomHash = keccak256(abi.encodePacked(
             block.timestamp, 
-            block.difficulty, 
+            block.prevrandao, // Replaced block.difficulty
             msg.sender, 
             totalSpins
         ));
