@@ -225,11 +225,21 @@ contract Blackjack is ReentrancyGuard {
         
         uint8 suit = uint8(uint256(card) >> 8) % 4;
         
-        if (suit == 0) return "♠";
-        if (suit == 1) return "♥";
-        if (suit == 2) return "♦";
-        if (suit == 3) return "♣";
+        // Return suit abbreviations instead of Unicode symbols
+        if (suit == 0) return "S"; // Spades
+        if (suit == 1) return "H"; // Hearts
+        if (suit == 2) return "D"; // Diamonds
+        if (suit == 3) return "C"; // Clubs
         return "?";
+    }
+
+    function getCardDisplay(bytes32 card) public pure returns (string memory) {
+        if (card == bytes32(0)) return "HIDDEN";
+        
+        string memory value = getCardValue(card);
+        string memory suit = getCardSuit(card);
+        
+        return string(abi.encodePacked(value, suit));
     }
 
     function toString(uint256 value) internal pure returns (string memory) {
@@ -271,5 +281,13 @@ contract Blackjack is ReentrancyGuard {
             uint8(game.dealerCards.length),
             game.state
         );
+    }
+
+    function getPlayerCards(address player) external view returns (bytes32[] memory) {
+        return activeGames[player].playerCards;
+    }
+
+    function getDealerCards(address player) external view returns (bytes32[] memory) {
+        return activeGames[player].dealerCards;
     }
 }
