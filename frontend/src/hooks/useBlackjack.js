@@ -14,19 +14,27 @@ export const useBlackjack = () => {
   const [betAmount, setBetAmount] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Blackjack ABI
+  // Blackjack ABI - Updated with new functions
   const BLACKJACK_ABI = [
     "function startGame() external payable",
     "function takeAction(uint8 action) external",
     "function getGameState(address player) external view returns (uint256 betAmount, uint256 playerTotal, uint256 dealerTotal, bool dealerRevealed, uint8 playerCardCount, uint8 dealerCardCount, uint8 state)",
-    "function getCardValue(bytes32 card) external pure returns (string memory)",
-    "function getCardSuit(bytes32 card) external pure returns (string memory)",
+    "function getCardDisplay(bytes32 card) external pure returns (string memory)",
+    "function getPlayerCards(address player) external view returns (bytes32[] memory)",
+    "function getDealerCards(address player) external view returns (bytes32[] memory)",
     "function calculateHandValue(bytes32[] memory cards) external pure returns (uint256)",
     "event GameStarted(address indexed player, uint256 betAmount, uint256 gameId)",
     "event CardDealt(address indexed player, bytes32 card, bool isPlayerCard)",
     "event GameCompleted(address indexed player, bool playerWon, uint256 payout, uint256 dealerTotal, uint256 playerTotal)",
     "event ActionTaken(address indexed player, uint8 action)"
   ];
+
+  const suitSymbols = {
+    'S': '♠',
+    'H': '♥', 
+    'D': '♦',
+    'C': '♣'
+  };
 
   const startGame = async (betAmount) => {
     if (!signer) throw new Error('Wallet not connected');
@@ -96,6 +104,37 @@ export const useBlackjack = () => {
       setDealerTotal(gameState.dealerRevealed ? gameState.dealerTotal.toNumber() : 0);
       setDealerRevealed(gameState.dealerRevealed);
 
+      // Load actual cards from blockchain
+      const playerCardData = await blackjack.getPlayerCards(account);
+      const dealerCardData = await blackjack.getDealerCards(account);
+
+      // Convert card data to display format
+      const playerCardsFormatted = await Promise.all(
+        playerCardData.map(async (card) => {
+          if (card === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+            return '?';
+          }
+          const display = await blackjack.getCardDisplay(card);
+          return formatCardDisplay(display);
+        })
+      );
+
+      const dealerCardsFormatted = await Promise.all(
+        dealerCardData.map(async (card, index) => {
+          if (card === '0x0000000000000000000000000000000000000000000000000000000000000000') {
+            return index === 1 && !gameState.dealerRevealed ? '?' : '?';
+          }
+          if (index === 1 && !gameState.dealerRevealed) {
+            return '?';
+          }
+          const display = await blackjack.getCardDisplay(card);
+          return formatCardDisplay(display);
+        })
+      );
+
+      setPlayerCards(playerCardsFormatted);
+      setDealerCards(dealerCardsFormatted);
+
       // Convert state
       const states = ['waiting', 'active', 'completed'];
       setGameState(states[gameState.state] || 'unknown');
@@ -119,50 +158,15 @@ export const useBlackjack = () => {
     }
   };
 
-  // Simulate card display (in production, you'd get actual card data from events)
-  const getPlayerCards = () => {
-    if (playerTotal === 0) return [];
+  const formatCardDisplay = (cardDisplay) => {
+    if (cardDisplay === 'HIDDEN') return '?';
     
-    // Generate mock cards based on total (for demo)
-    const cards = [];
-    let remaining = playerTotal;
+    // Convert "AS" to "A♠", "10H" to "10♥", etc.
+    const value = cardDisplay.slice(0, -1);
+    const suitAbbr = cardDisplay.slice(-1);
+    const suitSymbol = suitSymbols[suitAbbr] || suitAbbr;
     
-    if (playerTotal === 21 && playerCards.length === 2) {
-      return ['A♠', 'K♥']; // Blackjack!
-    }
-    
-    // Simple card generation for demo
-    if (remaining > 10) {
-      cards.push('10♦');
-      remaining -= 10;
-    }
-    if (remaining > 0) {
-      cards.push(remaining + '♣');
-    }
-    
-    return cards.length > 0 ? cards : ['?♠', '?♥'];
-  };
-
-  const getDealerCards = () => {
-    if (dealerTotal === 0) return ['?♠', '?♥'];
-    
-    if (dealerRevealed) {
-      // Similar to player cards but for dealer
-      const cards = [];
-      let remaining = dealerTotal;
-      
-      if (remaining > 10) {
-        cards.push('10♦');
-        remaining -= 10;
-      }
-      if (remaining > 0) {
-        cards.push(remaining + '♣');
-      }
-      
-      return cards.length > 0 ? cards : ['?♠', '?♥'];
-    } else {
-      return ['?♠', dealerTotal > 0 ? (dealerTotal - 10) + '♥' : '?♥'];
-    }
+    return value + suitSymbol;
   };
 
   // Initialize
@@ -183,8 +187,8 @@ export const useBlackjack = () => {
 
   return {
     currentGame,
-    playerCards: getPlayerCards(),
-    dealerCards: getDealerCards(),
+    playerCards,
+    dealerCards,
     playerTotal,
     dealerTotal,
     dealerRevealed,
