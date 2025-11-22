@@ -171,7 +171,7 @@ contract Blackjack is ReentrancyGuard {
         // Simple card generation (use Chainlink VRF in production)
         return keccak256(abi.encodePacked(
             block.timestamp, 
-            block.difficulty, 
+            block.prevrandao, // Replaced block.difficulty
             msg.sender, 
             totalGames,
             keccak256(abi.encodePacked("card"))
@@ -225,21 +225,12 @@ contract Blackjack is ReentrancyGuard {
         
         uint8 suit = uint8(uint256(card) >> 8) % 4;
         
-        // Return suit abbreviations instead of Unicode symbols
-        if (suit == 0) return "S"; // Spades
-        if (suit == 1) return "H"; // Hearts
-        if (suit == 2) return "D"; // Diamonds
-        if (suit == 3) return "C"; // Clubs
-        return "?";
-    }
-
-    function getCardDisplay(bytes32 card) public pure returns (string memory) {
-        if (card == bytes32(0)) return "HIDDEN";
-        
-        string memory value = getCardValue(card);
-        string memory suit = getCardSuit(card);
-        
-        return string(abi.encodePacked(value, suit));
+        // Return suit names instead of Unicode symbols
+        if (suit == 0) return "SPADES";
+        if (suit == 1) return "HEARTS";
+        if (suit == 2) return "DIAMONDS";
+        if (suit == 3) return "CLUBS";
+        return "UNKNOWN";
     }
 
     function toString(uint256 value) internal pure returns (string memory) {
@@ -283,11 +274,7 @@ contract Blackjack is ReentrancyGuard {
         );
     }
 
-    function getPlayerCards(address player) external view returns (bytes32[] memory) {
-        return activeGames[player].playerCards;
-    }
-
-    function getDealerCards(address player) external view returns (bytes32[] memory) {
-        return activeGames[player].dealerCards;
+    function getPlayerStats(address player) external view returns (uint256 wins, uint256 losses) {
+        return (playerWins[player], playerLosses[player]);
     }
 }
